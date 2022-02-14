@@ -10,18 +10,7 @@ class Traces
     def title
         @title
     end
-=begin
-    def read_files
-        @ls.each do |file|
-            unless File.directory?("./data/" + file)
-                File.open("./data/" + file).read.each_line do |line|
-                    parse line
-                end
-            end
-        end
-        
-    end
-=end
+
     def push_data
         @data.push({x: @x, y: @y, type: :scatter, mode: :markers, name: @label, marker: { color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"} }) # push the new trace
     end
@@ -36,8 +25,7 @@ class Traces
             @label = line[/\"(.*)"/, 1] # new label
 
             
-            @x = []
-            @y = []
+            empty
 
         elsif !line.include?(")") #within the last parenthesis #NOTE LOOK AT THIS
             points = line.split(' ').map(&:to_f)
@@ -51,6 +39,11 @@ class Traces
             push_data
         end
     end
+    def empty
+        @x.drop_while {|x| @x.size > 0} #ignore the x inside the bars
+        @y.drop_while {|x| @y.size > 0} #ignore the x inside the bars
+        @data.drop_while {|x| @data.size > 0}
+    end
     def data; @data; end
     def layout; {width: 500, height: 500, title: @title}; end
     def print_data
@@ -61,24 +54,38 @@ class Traces
 
 end
 module Graph
-    def self.read_files
-        ls.each do |file|
-            
-
-            unless File.directory?("./data/" + file)
-                @traces=Traces.new
-                
-                File.open("./data/" + file).read.each_line do |line|
-                    @traces.parse line
-                end
-                Plotly::Plot.new(data: @traces.data, layout: @traces.layout).generate_html(path: "./#{@traces.title}.html", open: false)
-
+    class << self
+        def usage
+            puts "WHAT IS: This program takes graph data from the data folder and creates html scatterplot graphs"
+        end
+        def check_dir
+            ["data", "graphs"].each do |dir|
+                Dir.exist?(dir) ? true : (Dir.mkdir(dir); puts "Created #{dir} folder")
             end
-              
+        end
+
+        def read_files
+            check_dir
+            plot = Plotly::Plot.new
+            traces = Traces.new
+            Dir.empty?("./data") ? (puts "\nPlease put graph data in the data folder"; return) : false
+            ls.each do |file|
+                
+                unless File.directory?("./data/" + file)
+                    traces.empty
+                    File.open("./data/" + file).read.each_line do |line|
+                        traces.parse line
+                    end
+                    plot.data = traces.data 
+                    plot.layout = traces.layout
+                    plot.generate_html(path: "./graphs/#{traces.title}_#{ls.index(file)}.html", open: false)
+                end
+            end
+        end
+        def ls
+            Dir.entries("./data")
         end
     end
-    def self.ls
-        Dir.entries("./data")
-    end
 end
+Graph.usage
 Graph.read_files
