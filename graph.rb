@@ -1,4 +1,5 @@
 require "rbplotly"
+require "byebug"
 class Traces
     def initialize
         
@@ -19,30 +20,26 @@ class Traces
             @title = line[/\"(.*)"/, 1] #yank anything between qoutes
         elsif line.include?("labels")
             @labels = line[/\"(.*)"/, 2]
-
         elsif line.include?("label") # new trace on the graph
-
             @label = line[/\"(.*)"/, 1] # new label
 
-            
             empty
 
         elsif !line.include?(")") #within the last parenthesis #NOTE LOOK AT THIS
             points = line.split(' ').map(&:to_f)
-            
             unless points[0].nil? || points[1].nil?
                 @x.push points[0]
                 @y.push points[1]
             end
-
         elsif line[0] == ')' #if last parenthesis
             push_data
+            
         end
     end
     def empty
-        @x.drop_while {|x| @x.size > 0} #ignore the x inside the bars
-        @y.drop_while {|x| @y.size > 0} #ignore the x inside the bars
-        @data.drop_while {|x| @data.size > 0}
+        @x = []
+        @y = []
+        
     end
     def data; @data; end
     def layout; {width: 500, height: 500, title: @title}; end
@@ -66,19 +63,24 @@ module Graph
 
         def read_files
             check_dir
-            plot = Plotly::Plot.new
-            traces = Traces.new
+            #plot = Plotly::Plot.new
+            #traces = Traces.new
             Dir.empty?("./data") ? (puts "\nPlease put graph data in the data folder"; return) : false
             ls.each do |file|
                 
                 unless File.directory?("./data/" + file)
-                    traces.empty
+                    traces = Traces.new
                     File.open("./data/" + file).read.each_line do |line|
                         traces.parse line
                     end
-                    plot.data = traces.data 
-                    plot.layout = traces.layout
-                    plot.generate_html(path: "./graphs/#{traces.title}_#{ls.index(file)}.html", open: false)
+                    
+                    #plot.data = traces.data 
+                    #plot.layout = traces.layout
+                    Dir.exist?("./graphs/#{traces.title}") ? true : Dir.mkdir("./graphs/#{traces.title}")
+                    plot = Plotly::Plot.new(data: traces.data, layout: traces.layout).generate_html(path: "./graphs/#{traces.title}/#{ls.index(file)}.html", open: false)
+                    #plot.generate_html(path: "./graphs/#{traces.title}_#{ls.index(file)}.html", open: false)
+                    
+
                 end
             end
         end
