@@ -82,6 +82,7 @@ module Graphy_2
             plot = Plotly::Plot.new
             #traces = Traces.new
             Dir.empty?("./data") ? (puts "\nPlease put graph data in the data folder"; return) : false
+            
             ds = Dataset.new("DHRL")
             ls.each do |file|
                 
@@ -92,11 +93,35 @@ module Graphy_2
                         
                     end
                     ds.in_label = false; #NOTE: bad practice
-                    byebug
-                    ds[]
-                    plot.data = traces.data 
+                    
+                    ds.data.keys.each do |title| #"Y-lines-UU"
+                        
+                        data = []
+                        layout = {width: 500, height: 500, title: file};
+                        ds.data[title].keys.each do |graph| #"x0-line"
+                            
+                            ds.data[title][graph].keys.each do |label| #"DHRL"
+                                
+                                data.push({
+                                    x: ds.data[title][graph][label][:x], 
+                                    y: ds.data[title][graph][label][:y],
+                                    type: :scatter,
+                                    mode: label,
+                                    marker: { 
+                                        color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"
+                                    }
+                                })
+                                
+                            end
+                            plot = Plotly::Plot.new(data: data, layout: layout)
+                            Dir.exist?("./graphs/#{file}") ? true : Dir.mkdir("./graphs/#{file}")
+                            #plot.download_image(path: "./graphs/#{title}/#{ls.index(file)}.png")
+                            plot.generate_html(path: "./graphs/#{file}/#{graph}_#{ls.index(file)}.html", open: false)
+                        end
+                    end
+                    #plot.data = traces.data 
                     #plot.layout = traces.layout
-                    #Dir.exist?("./graphs/#{traces.title}") ? true : Dir.mkdir("./graphs/#{traces.title}")
+                    #
                     #plot = Plotly::Plot.new(data: traces.data, layout: traces.layout).download_image(path: "./graphs/#{traces.title}/#{ls.index(file)}.png")
                     #plot.generate_html(path: "./graphs/#{traces.title}_#{ls.index(file)}.html", open: false)
                     
