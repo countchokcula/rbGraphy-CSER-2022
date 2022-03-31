@@ -122,7 +122,7 @@ module Graphy3
             
             #ds = Dataset.new(get_titles)
             
-            data_sets = []
+            
             ds = Data.new
             data_set_names.each do |name| #DHRL DHRL66 ... ect
                 ds.in_label = false; #NOTE: bad practice
@@ -146,8 +146,32 @@ module Graphy3
                 
             end
             
-           reorder_data ds.data
-            
+            reorder_data(ds.data).each_pair do |title, line|
+                
+                
+                layout = {}
+                line.each_pair do |data_set, d|
+                    plot_data = []
+                    layout = {width: 500, height: 500, title: "#{title} #{data_set}"}
+                    d.each_pair do |label, dat|
+                        
+                        plot_data.push({
+                            x: dat[:x],
+                            y: dat[:y],
+                            type: :scatter,
+                            name: label,
+                            marker: { 
+                                color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"
+                            }
+                        })
+                    end
+                    plot = Plotly::Plot.new(data: plot_data, layout: layout)
+                    Dir.exist?("./graphs/#{title}") ? true : Dir.mkdir("./graphs/#{title}")
+                    plot.generate_html(path: "./graphs/#{title}/#{data_set}.html", open: false)   
+                end
+                       
+            end
+        
         end
 =begin
 reorderdata = {
@@ -186,7 +210,7 @@ reorderdata = {
                     end 
                 end
             end
-            
+            new_ds
         end
     end
 end
