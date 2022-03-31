@@ -1,7 +1,8 @@
 require "rbplotly"
 require "byebug"
 module Graphy3
-    class Dataset
+    class Data
+        attr_accessor :in_label
 =begin
         @data = {
             "Y-Velocity UU": {
@@ -31,17 +32,16 @@ module Graphy3
             }
         }
 =end
-        def initialize(set_name=[], titles=nil)
+        def initialize
             @data = {}
+        end
+        def new_set(set_name, titles=[])
+            
             @data[set_name] = {}
             titles.each do |t|
-                @data[set_name][t] = {
-                    
-                }
+                @data[set_name][t] = {}
             end
-            
         end
-        
         def parse_line(name, file, line)
 
             if line.include?("title") #get title
@@ -55,6 +55,7 @@ module Graphy3
                 #@labels = line[/\"(.*)"/, 2]
             elsif line.include?("label") # new trace on the graph
                 @label = line[/\"(.*)"/, 1] # new label
+                
                 unless @data[name][file][@label]
                     @data[name][file][@label] = {
                         x: [],
@@ -122,10 +123,11 @@ module Graphy3
             #ds = Dataset.new(get_titles)
             
             data_sets = []
+            ds = Data.new
             data_set_names.each do |name| #DHRL DHRL66 ... ect
+                ds.in_label = false; #NOTE: bad practice
+                ds.new_set(name, get_titles(name))
                 
-                ds = Dataset.new(name, get_titles(name))
-
                 Dir.entries("./data/#{name}").each do |f|
                     data_file = "./data/#{name}/#{f}"
 
@@ -139,7 +141,50 @@ module Graphy3
                     end
                     
                 end
-                data_sets.push(ds)
+                #data_sets.push(ds)
+                
+                
+            end
+            
+           reorder_data ds.data
+            
+        end
+=begin
+reorderdata = {
+            "Y-Velocity UU": {
+                "x0-line": {
+                    DHRL: {
+                        x: [1,2,3,4],
+                        y: [1,2,3,4]
+                    },
+                    EXP: {
+                        x: [1,2,3,4],
+                        y: [1,2,3,4]
+                    }
+                }
+            }
+        }
+=end
+        def reorder_data(ds)
+            new_ds = {}
+            
+            ds.keys.each do |label| #DHRL
+                
+                ds[label].keys.each do |graph| #x-RUU
+                    unless new_ds[graph]
+                        new_ds[graph] = {}
+                    end
+
+                    
+                    ds[label][graph].keys.each do |line| #x0-line
+                        unless new_ds[graph][line]
+                            new_ds[graph][line] = {}
+                        end
+                        
+                        new_ds[graph][line][label] = ds[label][graph][line]
+
+                    end 
+                end
             end
             
         end
