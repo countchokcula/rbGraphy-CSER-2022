@@ -159,6 +159,7 @@ module Graphy3
                             x: dat[:x],
                             y: dat[:y],
                             type: :scatter,
+                            mode: 'markers',
                             name: label,
                             marker: { 
                                 color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"
