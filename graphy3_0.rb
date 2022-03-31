@@ -34,6 +34,7 @@ module Graphy3
 =end
         def initialize
             @data = {}
+            @markers = {}
         end
         def new_set(set_name, titles=[])
             
@@ -64,7 +65,7 @@ module Graphy3
                 end
                 @in_label = true
                 
-            elsif @in_label # !line.include?(")") &&  within the last parenthesis #NOTE LOOK AT THIS
+            elsif @in_label && !(line[0] == ')') # !line.include?(")") &&  within the last parenthesis #NOTE LOOK AT THIS
                 
                 points = line.split(' ').map(&:to_f)
                 unless points[0].nil? || points[1].nil?
@@ -72,10 +73,27 @@ module Graphy3
                     @data[name][file][@label][:y].push points[1]
                 end
                 
-            elsif line[0] == ')' #if last parenthesis
+            elsif line[0] == ")" #if last parenthesis
+                
+                unless @markers[@label]
+                   @markers[name] = { 
+                        color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"
+                    }
+                end
                 @in_label = false
                 
             end
+        end
+=begin
+        @markers = {
+            DHRL: {
+                color: "rgba(100,100,100,1)"
+            }
+        }
+=end
+        def markers # keeps track of colors
+
+            @markers
         end
 
         def data
@@ -89,7 +107,7 @@ module Graphy3
         end
         def check_dir
             ["data", "graphs"].each do |dir|
-                Dir.exist?(dir) ? true : (Dir.mkdir(dir); puts "Created #{dir} folder")
+                Dir.exist?(dir) ? true : (Dir.mkdir(dir); puts "\nCreated #{dir} folder")
             end
         end
         def data_set_names
@@ -161,9 +179,7 @@ module Graphy3
                             type: :scatter,
                             mode: 'markers',
                             name: label,
-                            marker: { 
-                                color: "rgba(#{rand(1..200)}, #{rand(1..200)}, #{rand(1..200)}, 1)"
-                            }
+                            marker: ds.markers[label]
                         })
                     end
                     plot = Plotly::Plot.new(data: plot_data, layout: layout)
@@ -207,7 +223,7 @@ reorderdata = {
                         end
                         
                         new_ds[graph][line][label] = ds[label][graph][line]
-
+                        
                     end 
                 end
             end
