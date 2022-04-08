@@ -1,6 +1,107 @@
 require "rbplotly"
 require "byebug"
+require "roo"
+
 module Graphy3
+
+    class Xcel
+=begin
+
+
+ 
+
+First file: Y(mm), V at X=0, V at X=1, U at X=0, U at X=1,  uu at X=0, uu at X=1, uv at X=0, uv at X=1, vv at X=0, vv at X=1        
+
+Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8),U(y/L=8),uu(y/L=8),uv(y/L=8),vv(y/L=8))
+=end        
+
+        attr_reader :headers, :data
+        def headers
+            {
+                y: ["V0", "V1", "U0", "U1", "uu0", "uu1", "uv0", "uv1", "vv0", "vv1"],
+                x: ["V", "U","uu","uv","vv"]
+            }
+        end
+        def initialize(path='./exp.xlsx', headers=[])
+            #@headers = headers
+            @file = Roo::Spreadsheet.open(path)
+            @y_vals = @file.sheet(1)
+            @x_vals = @file.sheet(0)
+
+            
+            @x_lines = {
+
+            }
+            @y_lines = {
+
+            }
+            
+        end
+        def create_data
+            headers[:x].each do |head|
+                @y_lines[head] = {}
+            end
+            
+            
+
+=begin
+            Intended Output:
+            @y_lines = {
+                "y0-line": {
+                    x: [],
+                    y: []
+                },
+                "y1-line": {
+                    x: [],
+                    y: []
+                }
+            }
+
+            @x_lines...same thing but with x0-line
+=end
+            i  = 1
+            while i < (@y_vals.last_column) #NOTE: Check this if graphs are wrong
+                name = headers[:x][i % 5]
+                y = i
+                if y % 9 == 0
+                    y += 1
+                end
+                @y_lines[name]["y#{(y % 9)}-line"] = {
+                    x: @x_vals.column(headers[:x].index(name)+1), #index could be zero, columns start a 1
+                    y: @y_vals.column(i)
+                }
+                
+                i += 1
+            end
+            
+            
+            headers[:y].each do |head|
+                name = head[/[^\(\)0-9]*/] #removes numbers
+                #if head.include?("0")
+                    @x_lines[name] = {
+                        "x#{head[/\d+/]}-line" => { #extract the number x0-line, x1-line
+                            x: @x_vals.column(headers[:x].index(name)+1),
+                            y: @y_vals.column(headers[:y].index(head)+1)
+                        }
+                    }
+                    
+                #else
+                #    @x_lines[name] = {
+                #        "x1-line" => {
+                #            x: @x_vals.column(headers[:x].index(name)+1),
+                #            y: @y_vals.column(headers[:y].index(head)+1)
+                #        }
+                #    }
+                #end
+                
+                
+            end
+            return {
+                x_lines: @x_lines,
+                y_lines: @y_lines
+            }
+        end
+    end    
     class Data
         attr_accessor :in_label
 =begin
@@ -36,6 +137,10 @@ module Graphy3
             @data = {}
             @markers = {}
         end
+        def add_to_hash(xcel)
+
+        end
+
         def new_set(set_name, titles=[])
             
             @data[set_name] = {}
@@ -92,7 +197,6 @@ module Graphy3
         }
 =end
         def markers # keeps track of colors
-
             @markers
         end
 
@@ -138,12 +242,11 @@ module Graphy3
             
             Dir.empty?("./data") ? (puts "\nPlease put graph data in the data folder"; return) : false
             
-            #ds = Dataset.new(get_titles)
-            
-            
+            xcel_data = Xcel.new.create_data
+
             ds = Data.new
             data_set_names.each do |name| #DHRL DHRL66 ... ect
-                ds.in_label = false; #NOTE: bad practice
+                
                 ds.new_set(name, get_titles(name))
                 
                 Dir.entries("./data/#{name}").each do |f|
@@ -159,13 +262,13 @@ module Graphy3
                     end
                     
                 end
-                #data_sets.push(ds)
-                
                 
             end
-            
-            reorder_data(ds.data).each_pair do |title, line|
-                
+            new_ds = reorder_data(ds.data)
+            new_ds = add_xcel(new_ds, xcel_data)
+
+            #reorder_data(ds.data).each_pair do |title, line|
+            new_ds.each_pair do |title, line|    
                 
                 layout = {}
                 line.each_pair do |data_set, d|
@@ -188,7 +291,7 @@ module Graphy3
                 end
                        
             end
-        
+            
         end
 =begin
 reorderdata = {
@@ -206,6 +309,9 @@ reorderdata = {
             }
         }
 =end
+        def add_xcel(ds, xcel_data)
+            
+        end
         def reorder_data(ds)
             new_ds = {}
             
@@ -231,4 +337,16 @@ reorderdata = {
         end
     end
 end
-Graphy3.read_files
+
+=begin
+
+
+ 
+
+First file: Y(mm), V at X=0, V at X=1, U at X=0, U at X=1,  uu at X=0, uu at X=1, uv at X=0, uv at X=1, vv at X=0, vv at X=1        
+
+Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8),U(y/L=8),uu(y/L=8),uv(y/L=8),vv(y/L=8))
+=end
+g = Graphy3::Xcel.new 
+g.create_data
+#Graphy3.read_files
