@@ -77,25 +77,18 @@ Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8)
             
             headers[:y].each do |head|
                 name = head[/[^\(\)0-9]*/] #removes numbers
-                #if head.include?("0")
-                    @x_lines[name] = {
-                        "x#{head[/\d+/]}-line" => { #extract the number x0-line, x1-line
-                            x: @x_vals.column(headers[:x].index(name)+1),
-                            y: @y_vals.column(headers[:y].index(head)+1)
-                        }
-                    }
+                
+                unless @x_lines[name]
+                    @x_lines[name] = {}
+                end
+                
+                @x_lines[name]["x#{head[/\d+/]}-line"] = { #extract the number x0-line, x1-line
+                        x: @x_vals.column(headers[:x].index(name)+1),
+                        y: @y_vals.column(headers[:y].index(head)+1)
+                }
                     
-                #else
-                #    @x_lines[name] = {
-                #        "x1-line" => {
-                #            x: @x_vals.column(headers[:x].index(name)+1),
-                #            y: @y_vals.column(headers[:y].index(head)+1)
-                #        }
-                #    }
-                #end
-                
-                
             end
+            
             return {
                 x_lines: @x_lines,
                 y_lines: @y_lines
@@ -206,6 +199,15 @@ Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8)
     end
 
     class << self
+        def create_json
+            
+            File.write("./parsed_data.json", read_files(true).to_json)
+            puts "\nCreated parsed_data.json File!"
+
+            File.write("./experimental_data.json", Xcel.new.create_data.to_json)
+            puts "\nCreated experimental_data.json File!"
+
+        end
         def ls
             Dir.entries("./data")
         end
@@ -235,7 +237,7 @@ Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8)
         end
         
        
-        def read_files
+        def read_files(json=false)
             check_dir
             #Plotly.auth("jthoward17","90d0ohU0cfSMejNkUm0r")
             plot = Plotly::Plot.new
@@ -265,7 +267,7 @@ Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8)
                 
             end
             new_ds = reorder_data(ds.data)
-            new_ds = add_xcel(new_ds, xcel_data)
+            #new_ds = add_xcel(new_ds, xcel_data)
 
             #reorder_data(ds.data).each_pair do |title, line|
             new_ds.each_pair do |title, line|    
@@ -285,13 +287,15 @@ Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8)
                             marker: ds.markers[label]
                         })
                     end
-                    plot = Plotly::Plot.new(data: plot_data, layout: layout)
-                    Dir.exist?("./graphs/#{title}") ? true : Dir.mkdir("./graphs/#{title}")
-                    plot.generate_html(path: "./graphs/#{title}/#{data_set}.html", open: false)   
+                    unless json
+                        plot = Plotly::Plot.new(data: plot_data, layout: layout)
+                        Dir.exist?("./graphs/#{title}") ? true : Dir.mkdir("./graphs/#{title}")
+                        plot.generate_html(path: "./graphs/#{title}/#{data_set}.html", open: false)
+                    end
                 end
                        
             end
-            
+            new_ds
         end
 =begin
 reorderdata = {
@@ -347,6 +351,3 @@ First file: Y(mm), V at X=0, V at X=1, U at X=0, U at X=1,  uu at X=0, uu at X=1
 
 Second file: X(mm), (V(y/L=1),U(y/L=1),uu(y/L=1),uv(y/L=1),vv(y/L=1)....V(y/L=8),U(y/L=8),uu(y/L=8),uv(y/L=8),vv(y/L=8))
 =end
-g = Graphy3::Xcel.new 
-g.create_data
-#Graphy3.read_files
